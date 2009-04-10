@@ -42,16 +42,14 @@
 
 (defun run-nose (&optional tests debug)
   "run nosetests"
-  (interactive)
-
   (let* ((nose (nose-find-test-runner))
          (where (expand-file-name "../.." (file-name-directory nose)))
          (args (if debug "--pdb" ""))
          (tnames (if tests tests "")))
-    (print nose)
-    (print args)
-    (print tnames)
-    (funcall (if debug 'pdb 'compile)
+    (funcall (if debug 'pdb '(lambda (command)
+                               (compilation-start command
+                                                  nil
+                                                  (lambda (mode) (concat "*nosetests*")))))
              (format "%s -v %s -w %s -c %s/setup.cfg %s"
                      (nose-find-test-runner) args where where tnames)))
   )
@@ -85,7 +83,6 @@
   (nosetests-one t))
 
 (defun nose-find-test-runner ()
-  (interactive)
   (message
    (let ((result (reduce '(lambda (x y) (or x y))
                          (mapcar 'nose-find-test-runner-names nose-project-names))))
@@ -106,7 +103,6 @@
           runner)))))
 
 (defun nose-py-testable ()
-  (interactive)
   (let ((remember-point (point)))
     (re-search-backward
      "^ \\{0,4\\}\\(class\\|def\\)[ \t]+\\([a-zA-Z0-9_]+\\)" nil t)
