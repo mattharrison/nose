@@ -38,19 +38,21 @@
 ;;             (local-set-key "\C-cp." 'nosetests-pdb-one)))
 
 (defvar nose-project-names '("eco/bin/test"))
+(defvar nose-project-root-files '("setup.py" ".hg" ".git"))
+(defvar nose-project-root-test 'nose-project-root)
 (defvar nose-global-name "nosetests")
 
 (defun run-nose (&optional tests debug)
   "run nosetests"
   (let* ((nose (nose-find-test-runner))
-         (where (expand-file-name "../.." (file-name-directory nose)))
+         (where (nose-find-project-root))
          (args (if debug "--pdb" ""))
          (tnames (if tests tests "")))
     (funcall (if debug 'pdb '(lambda (command)
                                (compilation-start command
                                                   nil
                                                   (lambda (mode) (concat "*nosetests*")))))
-             (format "%s -v %s -w %s -c %s/setup.cfg %s"
+             (format "%s -v %s -w %s -c %ssetup.cfg %s"
                      (nose-find-test-runner) args where where tnames)))
   )
 
@@ -120,4 +122,17 @@
       (goto-char remember-point)
       result)))
 
+(defun nose-find-project-root (&optional dirname)  
+  (interactive)
+  (when (null dirname) (setq dirname (file-name-directory buffer-file-name)))
+  (cond ((nose-project-root dirname) (expand-file-name dirname))
+        ((string= (expand-file-name dirname) "/") nil)
+        (t (nose-find-project-root
+            (file-name-directory (directory-file-name dirname))))))
+
+(defun nose-project-root (dirname)
+  (reduce '(lambda (x y) (or x y))
+          (mapcar (lambda (d) (member d (directory-files dirname)))
+                  nose-project-root-files)))
+       
 (provide 'nose)
