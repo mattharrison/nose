@@ -27,6 +27,17 @@
 ;; Note that if your global nose isn't called "nosetests", then you'll want to
 ;; redefine nose-global-name to be the command that should be used.
 
+;; By default, the root of a project is found by looking for any of the files
+;; 'setup.py', '.hg' and '.git'. You can add files to check for to the file
+;; list:
+;;
+;; ; (add-to-list 'nose-project-root-files "something")
+
+;; or you can change the project root test to detect in some other way 
+;; whether a directory is the project root:
+;;
+;; ; (setq nose-project-root-test (lambda (dirname) (equal dirname "foo")))
+
 ;; Probably also want some keybindings:
 ;; (add-hook 'python-mode-hook
 ;;           (lambda ()
@@ -136,12 +147,11 @@
        result))))
 
 (defun nose-find-project-root (&optional dirname)  
-  (interactive)
   (let ((dn
          (if dirname
              dirname 
            (file-name-directory buffer-file-name))))
-    (cond ((nose-project-root dn) (expand-file-name dn))
+    (cond ((funcall nose-project-root-test dn) (expand-file-name dn))
           ((equal (expand-file-name dn) "/") nil)
         (t1 (nose-find-project-root
              (file-name-directory (directory-file-name dn)))))))
