@@ -48,10 +48,12 @@
          (where (nose-find-project-root))
          (args (if debug "--pdb" ""))
          (tnames (if tests tests "")))
-    (funcall (if debug 'pdb '(lambda (command)
-                               (compilation-start command
-                                                  nil
-                                                  (lambda (mode) (concat "*nosetests*")))))
+    (funcall (if debug 
+                 'pdb 
+               '(lambda (command)
+                  (compilation-start command
+                                     nil
+                                     (lambda (mode) (concat "*nosetests*")))))
              (format "%s -v %s -w %s -c %ssetup.cfg %s"
                      (nose-find-test-runner) args where where tnames)))
   )
@@ -86,15 +88,17 @@
 
 (defun nose-find-test-runner ()
   (message
-   (let ((result (reduce '(lambda (x y) (or x y))
-                         (mapcar 'nose-find-test-runner-names nose-project-names))))
+   (let ((result 
+          (reduce '(lambda (x y) (or x y))
+        (mapcar 'nose-find-test-runner-names nose-project-names))))
      (if result
          result
        nose-global-name))))
 
 (defun nose-find-test-runner-names (runner)
   "find eggs/bin/test in a parent dir of current buffer's file"
-  (nose-find-test-runner-in-dir-named (file-name-directory buffer-file-name) runner))
+  (nose-find-test-runner-in-dir-named 
+   (file-name-directory buffer-file-name) runner))
 
 (defun nose-find-test-runner-in-dir-named (dn runner)
   (let ((fn (expand-file-name runner dn)))
@@ -105,30 +109,42 @@
           runner)))))
 
 (defun nose-py-testable ()
-  (let ((remember-point (point)))
+  (let* ((inner-obj (inner-testable))
+         (outer (outer-testable))
+         ;; elisp can't return multiple values
+         (outer-def (car outer))
+         (outer-obj (cdr outer)))
+    (cond ((equal outer-def "def") outer-obj)
+          ((equal inner-obj outer-obj) outer-obj)
+          (t (format "%s.%s" outer-obj inner-obj)))))
+           
+(defun inner-testable ()
+  (save-excursion
     (re-search-backward
      "^ \\{0,4\\}\\(class\\|def\\)[ \t]+\\([a-zA-Z0-9_]+\\)" nil t)
-    (setq t1 (buffer-substring-no-properties (match-beginning 2) (match-end 2)))
-    (goto-char remember-point)
+    (buffer-substring-no-properties (match-beginning 2) (match-end 2))))
+
+(defun outer-testable ()
+  (save-excursion
     (re-search-backward
      "^\\(class\\|def\\)[ \t]+\\([a-zA-Z0-9_]+\\)" nil t)
-    (setq outer
-          (buffer-substring-no-properties (match-beginning 1) (match-end 1)))
-    (setq t2 (buffer-substring-no-properties (match-beginning 2) (match-end 2)))
-    (let
-        ((result (cond ((string= outer "def") t2)
-                       ((string= t1 t2) t2)
-                       (t (format "%s.%s" t2 t1)))))
-      (goto-char remember-point)
-      result)))
+    (let ((result 
+            (buffer-substring-no-properties (match-beginning 2) (match-end 2))))
+
+      (cons 
+       (buffer-substring-no-properties (match-beginning 1) (match-end 1))
+       result))))
 
 (defun nose-find-project-root (&optional dirname)  
   (interactive)
-  (when (null dirname) (setq dirname (file-name-directory buffer-file-name)))
-  (cond ((nose-project-root dirname) (expand-file-name dirname))
-        ((string= (expand-file-name dirname) "/") nil)
-        (t (nose-find-project-root
-            (file-name-directory (directory-file-name dirname))))))
+  (let ((dn
+         (if dirname
+             dirname 
+           (file-name-directory buffer-file-name))))
+    (cond ((nose-project-root dn) (expand-file-name dn))
+          ((equal (expand-file-name dn) "/") nil)
+        (t1 (nose-find-project-root
+             (file-name-directory (directory-file-name dn)))))))
 
 (defun nose-project-root (dirname)
   (reduce '(lambda (x y) (or x y))
