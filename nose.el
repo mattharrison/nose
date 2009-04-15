@@ -33,10 +33,13 @@
 ;;
 ;; ; (add-to-list 'nose-project-root-files "something")
 
-;; or you can change the project root test to detect in some other way 
+;; or you can change the project root test to detect in some other way
 ;; whether a directory is the project root:
 ;;
 ;; ; (setq nose-project-root-test (lambda (dirname) (equal dirname "foo")))
+
+;; If you want dots as output, rather than the verbose output:
+;; (defvar nose-use-verbose nil) ; default is t
 
 ;; Probably also want some keybindings:
 ;; (add-hook 'python-mode-hook
@@ -52,6 +55,7 @@
 (defvar nose-project-root-files '("setup.py" ".hg" ".git"))
 (defvar nose-project-root-test 'nose-project-root)
 (defvar nose-global-name "nosetests")
+(defvar nose-use-verbose t)
 
 (defun run-nose (&optional tests debug)
   "run nosetests"
@@ -59,14 +63,17 @@
          (where (nose-find-project-root))
          (args (if debug "--pdb" ""))
          (tnames (if tests tests "")))
-    (funcall (if debug 
-                 'pdb 
+    (funcall (if debug
+                 'pdb
                '(lambda (command)
                   (compilation-start command
                                      nil
                                      (lambda (mode) (concat "*nosetests*")))))
-             (format "%s -v %s -w %s -c %ssetup.cfg %s"
-                     (nose-find-test-runner) args where where tnames)))
+             (format
+              (concat "%s "
+                      (if nose-use-verbose "-v" "")
+                      "%s -w %s -c %ssetup.cfg %s")
+              (nose-find-test-runner) args where where tnames)))
   )
 
 (defun nosetests-all (&optional debug)
@@ -99,7 +106,7 @@
 
 (defun nose-find-test-runner ()
   (message
-   (let ((result 
+   (let ((result
           (reduce '(lambda (x y) (or x y))
         (mapcar 'nose-find-test-runner-names nose-project-names))))
      (if result
@@ -108,7 +115,7 @@
 
 (defun nose-find-test-runner-names (runner)
   "find eggs/bin/test in a parent dir of current buffer's file"
-  (nose-find-test-runner-in-dir-named 
+  (nose-find-test-runner-in-dir-named
    (file-name-directory buffer-file-name) runner))
 
 (defun nose-find-test-runner-in-dir-named (dn runner)
@@ -128,7 +135,7 @@
     (cond ((equal outer-def "def") outer-obj)
           ((equal inner-obj outer-obj) outer-obj)
           (t (format "%s.%s" outer-obj inner-obj)))))
-           
+
 (defun inner-testable ()
   (save-excursion
     (re-search-backward
@@ -139,17 +146,17 @@
   (save-excursion
     (re-search-backward
      "^\\(class\\|def\\)[ \t]+\\([a-zA-Z0-9_]+\\)" nil t)
-    (let ((result 
+    (let ((result
             (buffer-substring-no-properties (match-beginning 2) (match-end 2))))
 
-      (cons 
+      (cons
        (buffer-substring-no-properties (match-beginning 1) (match-end 1))
        result))))
 
-(defun nose-find-project-root (&optional dirname)  
+(defun nose-find-project-root (&optional dirname)
   (let ((dn
          (if dirname
-             dirname 
+             dirname
            (file-name-directory buffer-file-name))))
     (cond ((funcall nose-project-root-test dn) (expand-file-name dn))
           ((equal (expand-file-name dn) "/") nil)
@@ -160,5 +167,5 @@
   (reduce '(lambda (x y) (or x y))
           (mapcar (lambda (d) (member d (directory-files dirname)))
                   nose-project-root-files)))
-       
+
 (provide 'nose)
