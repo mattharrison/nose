@@ -160,7 +160,7 @@
            (file-name-directory buffer-file-name))))
     (cond ((funcall nose-project-root-test dn) (expand-file-name dn))
           ((equal (expand-file-name dn) "/") nil)
-        (t1 (nose-find-project-root
+        (t (nose-find-project-root
              (file-name-directory (directory-file-name dn)))))))
 
 (defun nose-project-root (dirname)
