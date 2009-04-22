@@ -71,7 +71,7 @@
                                      (lambda (mode) (concat "*nosetests*")))))
              (format
               (concat "%s "
-                      (if nose-use-verbose "-v" "")
+                      (if nose-use-verbose "-v " "")
                       "%s -w %s -c %ssetup.cfg %s")
               (nose-find-test-runner) args where where tnames)))
   )
