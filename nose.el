@@ -51,6 +51,8 @@
 ;;             (local-set-key "\C-cpm" 'nosetests-pdb-module)
 ;;             (local-set-key "\C-cp." 'nosetests-pdb-one)))
 
+(require 'cl) ;; for "reduce"
+
 (defvar nose-project-names '("eco/bin/test"))
 (defvar nose-project-root-files '("setup.py" ".hg" ".git"))
 (defvar nose-project-root-test 'nose-project-root)
