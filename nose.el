@@ -59,11 +59,13 @@
 (defvar nose-global-name "nosetests")
 (defvar nose-use-verbose t)
 
-(defun run-nose (&optional tests debug failed)
+(defun run-nose (&optional tests debug failed coverage)
   "run nosetests"
   (let* ((nose (nose-find-test-runner))
          (where (nose-find-project-root))
          (args (concat (if debug "--pdb" "")
+                       " "
+                       (if coverage "--with-coverage")
                        " "
                        (if failed "--failed" "")))
          (tnames (if tests tests "")))
@@ -80,33 +82,37 @@
               (nose-find-test-runner) args where where tnames)))
   )
 
-(defun nosetests-all (&optional debug failed)
+(defun nosetests-all (&optional debug failed coverage)
   "run all tests"
   (interactive)
-  (run-nose nil debug failed))
+  (run-nose nil debug failed coverage))
 
-(defun nosetests-failed (&optional debug)
+(defun nosetests-failed (&optional debug coverage)
   (interactive)
-  (nosetests-all debug t))
+  (nosetests-all debug t coverage))
 
 (defun nosetests-pdb-all ()
   (interactive)
   (nosetests-all t))
 
-(defun nosetests-module (&optional debug)
+(defun nosetests-module (&optional debug coverage)
   "run nosetests (via eggs/bin/test) on current buffer"
   (interactive)
-  (run-nose buffer-file-name debug))
+  (run-nose buffer-file-name debug coverage))
 
 (defun nosetests-pdb-module ()
   (interactive)
   (nosetests-module t))
 
-(defun nosetests-one (&optional debug)
+(defun nosetests-coverage-one ()
+  (interactive)
+  (nosetests-one nil t))
+
+(defun nosetests-one (&optional debug coverage)
   "run nosetests (via eggs/bin/test) on testable thing
  at point in current buffer"
   (interactive)
-  (run-nose (format "%s:%s" buffer-file-name (nose-py-testable)) debug))
+  (run-nose (format "%s:%s" buffer-file-name (nose-py-testable)) debug coverage))
 
 (defun nosetests-pdb-one ()
   (interactive)
